@@ -37,7 +37,7 @@ function lienExterne(url, texte, classe) {
 }
 
 function montant(n, devise) {
-  if (typeof n !== "number" || !isFinite(n)) return "?";
+  if (typeof n !== "number" || !isFinite(n)) return "Prix ?";
   if (n === 0) return "Gratuit";
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: devise, maximumFractionDigits: 0 }).format(n);
 }
@@ -127,21 +127,21 @@ function lireFormulaire() {
   };
 }
 
-// ===================== Clé API ======================================
+// ===================== Clé Gemini (facultative) ==================
 
 function ouvrirReglagesCle() {
-  $("cle").value = memoire.lire("cle-api") || "";
+  $("cle").value = memoire.lire("cle-gemini") || "";
   $("dialogue-cle").showModal();
 }
 
 $("ouvrir-cle").addEventListener("click", ouvrirReglagesCle);
 $("dialogue-cle").addEventListener("close", () => {
-  if ($("dialogue-cle").returnValue === "ok") memoire.ecrire("cle-api", $("cle").value.trim() || null);
+  if ($("dialogue-cle").returnValue === "ok") memoire.ecrire("cle-gemini", $("cle").value.trim() || null);
   majBoutonCle();
 });
-$("effacer-cle").addEventListener("click", () => { memoire.ecrire("cle-api", null); $("cle").value = ""; majBoutonCle(); });
+$("effacer-cle").addEventListener("click", () => { memoire.ecrire("cle-gemini", null); $("cle").value = ""; majBoutonCle(); });
 function majBoutonCle() {
-  $("ouvrir-cle").textContent = memoire.lire("cle-api") ? "🔑 Clé API ✓" : "🔑 Clé API";
+  $("ouvrir-cle").textContent = memoire.lire("cle-gemini") ? "✨ Gemini activé" : "✨ Ajouter Gemini";
 }
 
 // ===================== Recherche ====================================
@@ -154,8 +154,7 @@ async function lancerRecherche(evt) {
   if (!voyage) return;
   memoire.ecrire("dernier-voyage", JSON.stringify(voyage));
 
-  const cle = memoire.lire("cle-api");
-  if (!cle) { ouvrirReglagesCle(); return; }
+  const cle = memoire.lire("cle-gemini");
 
   $("erreur").hidden = true;
   $("resultats").hidden = true;
@@ -170,12 +169,39 @@ async function lancerRecherche(evt) {
     $("etapes").append(el("li", {}, texte));
     $("etapes").scrollTop = $("etapes").scrollHeight;
   };
-  suivi("Analyse de ton voyage…");
-
   try {
-    // claude.js n'est chargé qu'au moment de chercher (le mode démo s'en passe)
-    const { chercherActivites } = await import("./claude.js");
-    const resultat = await chercherActivites(voyage, cle, suivi, controleur.signal);
+    // 1. Les activités du guide Wikivoyage (gratuit, sans clé)
+    const { chercherWikivoyage, resultatSansIA } = await import("./wikivoyage.js");
+    let wv = null;
+    try {
+      wv = await chercherWikivoyage(voyage, suivi);
+    } catch (e) {
+      if (!cle) throw e;
+      suivi("Wikivoyage ne répond pas, on continue avec Gemini seul.");
+    }
+    if (!wv && !cle) {
+      throw new Error(`« ${voyage.destination} » est introuvable sur Wikivoyage. Essaie le nom de la ville en français ou en anglais (ex. « Lisbonne » ou « Lisbon »), ou ajoute une clé Gemini gratuite.`);
+    }
+    if (wv) suivi(`${wv.candidates.length} activité(s) trouvée(s) dans le guide.`);
+
+    // 2. Le complément Gemini, si une clé gratuite est enregistrée
+    let resultat;
+    if (cle) {
+      try {
+        const { completerAvecGemini } = await import("./gemini.js");
+        resultat = await completerAvecGemini(voyage, wv, cle, suivi, controleur.signal);
+      } catch (e) {
+        if (controleur.signal.aborted || !wv) throw e;
+        resultat = resultatSansIA(voyage, wv);
+        resultat.avertissement = e.message + " Voici les activités du guide Wikivoyage, sans le complément de Gemini.";
+      }
+    } else {
+      resultat = resultatSansIA(voyage, wv);
+    }
+    if (wv) resultat.source_page = { titre: wv.titre, url: wv.url };
+    if (wv && wv.candidates.length === 0 && !cle) {
+      throw new Error("Le guide Wikivoyage n'a pas de fiches d'activités pour cette destination. Ajoute une clé Gemini gratuite pour avoir des propositions.");
+    }
     memoire.ecrire("dernier-resultat", JSON.stringify({ voyage, resultat }));
     afficherResultats(voyage, resultat);
   } catch (e) {
@@ -196,6 +222,7 @@ const LIBELLE_RESA = {
   obligatoire: "À réserver à l'avance",
   conseillee: "Réservation conseillée",
   sur_place: "Sans réservation",
+  inconnu: "Réservation à vérifier",
 };
 
 function carteActivite(a, devise) {
@@ -215,9 +242,10 @@ function carteActivite(a, devise) {
     ),
     a.description && el("p", {}, a.description),
     a.pourquoi && el("p", { class: "meta" }, "👍 " + a.pourquoi),
-    el("p", { class: "meta" }, [a.quand && "🗓 " + a.quand, a.duree && "⏱ " + a.duree].filter(Boolean).join("  ·  ")),
+    (a.quand || a.duree) && el("p", { class: "meta" }, [a.quand && "🗓 " + a.quand, a.duree && "⏱ " + a.duree].filter(Boolean).join("  ·  ")),
     a.conseil_reservation && el("p", { class: "conseil-resa" }, el("b", {}, "Réservation : "), a.conseil_reservation),
     lien ? lienExterne(lien, "Site officiel ↗", "lien") : el("p", { class: "meta" }, "Pas de site officiel trouvé"),
+    a.source && el("p", { class: "source" }, "Source : " + a.source),
   );
 }
 
@@ -246,6 +274,7 @@ function sectionActivites(r, devise) {
   }
 
   return [
+    r.avertissement && el("p", { class: "info" }, r.avertissement),
     el("div", { class: "carte resume" },
       el("h2", { style: "margin-top:0" }, r.destination || "Ton voyage"),
       r.resume && el("p", {}, r.resume),
@@ -255,6 +284,7 @@ function sectionActivites(r, devise) {
         budget > 0 && el("span", { class: "meta" }, `sur ${montant(budget, devise)} prévus pour les activités`),
         budget > 0 && el("div", { class: "jauge" + (total > budget ? " depasse" : ""), role: "img", "aria-label": `${Math.round((total / budget) * 100)} % du budget activités` }, el("span", { style: `width:${part}%` })),
         r.explication_budget && el("p", { class: "meta" }, r.explication_budget),
+        r.note_prix && el("p", { class: "meta" }, r.note_prix),
       ),
       Array.isArray(r.conseils) && r.conseils.length > 0 && el("div", {}, el("b", {}, "Conseils"), el("ul", { class: "simple" }, r.conseils.map((c) => el("li", {}, c)))),
     ),
@@ -283,7 +313,7 @@ function sectionTransportLogement(voyage, r) {
           el("span", {}, [o.duree, o.prix].filter(Boolean).join(" · ")),
           o.commentaire && el("p", { class: "meta", style: "margin:2px 0 0" }, o.commentaire),
         ))),
-      el("p", { class: "note" }, "Prix estimés par Claude. Les prix réels, à tes dates, s'affichent sur ces sites :"),
+      el("p", { class: "note" }, (options.length ? "Prix estimés par Gemini. " : "") + "Les prix réels, à tes dates, s'affichent sur ces sites :"),
       boutonsSites(liensTransport(voyage, { skyscannerDepart: t.code_skyscanner_depart, skyscannerArrivee: t.code_skyscanner_arrivee })),
     ));
   }
@@ -308,7 +338,7 @@ function afficherResultats(voyage, r, defiler = true) {
   zone.replaceChildren(
     ...sectionActivites(r, voyage.devise),
     ...sectionTransportLogement(voyage, r),
-    r.cout > 0 ? el("p", { class: "note" }, `Recherche effectuée avec ${r.nbRecherches} recherche(s) web · coût estimé ≈ ${r.cout.toFixed(2).replace(".", ",")} $ sur ton compte Anthropic.`) : "",
+    r.source_page ? el("p", { class: "note" }, "Activités tirées du guide ", lienExterne(r.source_page.url, "Wikivoyage : " + r.source_page.titre, ""), " (contenu libre, licence CC BY-SA)" + (r.activites?.some((a) => /Gemini/.test(a.source || "")) ? ", complétées par Gemini (Google)." : ".")) : "",
   );
   zone.hidden = false;
   if (defiler) zone.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -317,6 +347,7 @@ function afficherResultats(voyage, r, defiler = true) {
 // ===================== Démarrage ====================================
 
 construireInterets();
+memoire.ecrire("cle-api", null); // ancienne clé Claude de la première version : effacée
 majBoutonCle();
 $("profil").addEventListener("change", majProfil);
 $("enfants").addEventListener("input", majAges);

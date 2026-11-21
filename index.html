@@ -69,6 +69,8 @@ input,select{width:100%;border:1px solid var(--line);background:var(--bg);border
 .b-sur_place{background:var(--vert-bg);color:var(--vert)}
 .b-evenement{background:var(--bleu-bg);color:var(--bleu)}
 .b-cat{border:1px solid var(--line);color:var(--mut)}
+.b-inconnu{border:1px dashed var(--mut);color:var(--mut)}
+.source{font-size:12px;color:var(--mut);margin:6px 0 0}
 .activite p{margin:4px 0}
 .meta{color:var(--mut);font-size:14px}
 .conseil-resa{font-size:14px;margin-top:6px}
@@ -97,9 +99,9 @@ footer{margin-top:36px;font-size:13px;color:var(--mut)}
   <header>
     <div>
       <h1>Carnet de voyage</h1>
-      <p class="sub">Dis-moi où et quand tu pars : je te propose des activités dans ton budget, puis le transport et le logement.</p>
+      <p class="sub">Dis-moi où et quand tu pars : je te propose des activités dans ton budget, puis le transport et le logement. 100 % gratuit.</p>
     </div>
-    <button type="button" class="bouton-cle" id="ouvrir-cle">🔑 Clé API</button>
+    <button type="button" class="bouton-cle" id="ouvrir-cle">✨ Ajouter Gemini</button>
   </header>
 
   <div id="bandeau-demo" class="info" hidden>Mode démo : les résultats ci-dessous sont un exemple écrit à la main, sans recherche réelle. <a href="./">Quitter la démo</a></div>
@@ -172,7 +174,7 @@ footer{margin-top:36px;font-size:13px;color:var(--mut)}
 
   <div id="progression" class="carte" aria-live="polite">
     <div class="barre-attente"><span></span></div>
-    <b>Claude prépare ton voyage…</b> <small class="meta">(1 à 3 minutes : il vérifie les dates, les prix et les sites officiels)</small>
+    <b>Préparation de ton voyage…</b> <small class="meta">(quelques secondes, jusqu'à une minute avec Gemini)</small>
     <ul id="etapes"></ul>
     <button type="button" class="bouton-cle" id="annuler" style="margin-top:8px">Annuler</button>
   </div>
@@ -181,24 +183,31 @@ footer{margin-top:36px;font-size:13px;color:var(--mut)}
   <section id="resultats" hidden></section>
 
   <footer>
-    Les activités sont proposées par Claude (Anthropic) après une recherche sur le web : vérifie toujours les horaires et les prix sur le site officiel avant de partir.
-    Les prix de transport et de logement sont des estimations ; les prix réels s'affichent sur les sites en cliquant sur les liens.
+    Activités tirées du guide libre <a href="https://fr.wikivoyage.org/" target="_blank" rel="noopener">Wikivoyage</a> (licence CC BY-SA), complétées si tu le souhaites par l'IA gratuite Gemini (Google).
+    Vérifie toujours les horaires et les prix sur le site officiel avant de partir : les fiches du guide peuvent être anciennes.
+    Les prix de transport et de logement s'affichent sur les sites de réservation en cliquant sur les liens.
     <br><a href="?demo">Voir un exemple (mode démo)</a>
   </footer>
 </main>
 
 <dialog id="dialogue-cle" aria-labelledby="titre-cle">
   <form method="dialog" id="form-cle">
-    <h2 id="titre-cle" style="margin-top:0">Ta clé API Claude</h2>
-    <p>Pour chercher les activités, l'appli utilise Claude avec ta propre clé API Anthropic.</p>
+    <h2 id="titre-cle" style="margin-top:0">Ajouter Gemini (gratuit, facultatif)</h2>
+    <p>Sans rien ajouter, l'appli fonctionne avec le guide Wikivoyage. Avec une clé gratuite de l'IA Gemini (Google), elle va plus loin :</p>
     <ul class="simple">
-      <li>Crée une clé sur <a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener">platform.claude.com</a> (menu « API keys »), après avoir ajouté un peu de crédit.</li>
-      <li>Chaque recherche coûte environ 10 à 40 centimes ; le coût exact s'affiche après chaque recherche.</li>
-      <li>La clé reste <b>uniquement dans ce navigateur</b>, sur cet appareil. Elle n'est envoyée qu'à Anthropic (api.anthropic.com), jamais sur GitHub.</li>
-      <li>Conseil : fixe une limite de dépenses mensuelle dans les réglages de ton compte Anthropic.</li>
+      <li>un programme choisi pour ton profil, avec les événements habituels à tes dates (marchés de Noël, festivals…) ;</li>
+      <li>des conseils de réservation plus fiables et des prix mis à jour ;</li>
+      <li>des estimations de transport et de logement, et les quartiers où loger.</li>
     </ul>
-    <label for="cle">Clé API</label>
-    <input id="cle" type="password" autocomplete="off" placeholder="sk-ant-…" spellcheck="false">
+    <p><b>Créer la clé :</b> va sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, connecte-toi avec un compte Google, puis « Create API key ». C'est gratuit, sans carte bancaire.</p>
+    <ul class="simple">
+      <li>La version gratuite a un quota par jour, largement suffisant pour un usage perso.</li>
+      <li>Elle ne cherche pas sur internet en direct : Gemini répond avec ses connaissances.</li>
+      <li>Google peut utiliser les demandes gratuites pour améliorer ses produits. L'appli n'envoie que ton projet de voyage (destination, dates, budget, profil), rien de personnel.</li>
+      <li>La clé reste <b>uniquement dans ce navigateur</b>, sur cet appareil. Elle n'est envoyée qu'à Google, jamais sur GitHub.</li>
+    </ul>
+    <label for="cle">Clé Gemini</label>
+    <input id="cle" type="password" autocomplete="off" placeholder="AIza…" spellcheck="false">
     <div class="actions">
       <button type="button" id="effacer-cle">Effacer la clé</button>
       <button value="annuler" formnovalidate>Fermer</button>
