@@ -13,6 +13,8 @@
 // =====================================================================
 
 // Modèles gratuits, du meilleur au plus léger : si l'un n'existe plus, on essaie le suivant
+import { selectionner, versActivite } from "./wikivoyage.js";
+
 const MODELES = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
 
 const LIBELLES_PROFIL = {
@@ -31,9 +33,11 @@ Règles :
 - Tu n'as pas accès à internet : appuie-toi sur tes connaissances. Pour un événement, ne l'ajoute que si tu es confiant qu'il a lieu chaque année à ces dates, et dis dans "quand" de vérifier les dates exactes.
 - Le lien doit être le site OFFICIEL. Pour une activité Wikivoyage, laisse "lien": null (l'appli reprendra celui du guide). Pour une activité ajoutée, mets l'adresse du site officiel seulement si tu en es sûr, sinon null.
 - Adapte au profil : pas de longues visites pour de jeunes enfants, des sensations pour des ados, des lieux romantiques pour un couple, etc.
-- Le total des activités doit rester dans le budget prévu pour les activités. Si le budget couvre tout le voyage, estime ce qu'il reste pour les activités une fois transport et logement payés, et explique-le.
-- Propose entre 8 et 14 activités, dont au moins 2 gratuites si possible.
-- Les prix sont le TOTAL pour tout le groupe, dans la devise demandée. Corrige les prix anciens du guide si tu connais le prix actuel.
+- Le total de ta sélection doit rester dans le budget prévu pour les activités. Si le budget couvre tout le voyage, estime ce qu'il reste pour les activités une fois transport et logement payés, et explique-le.
+- Choisis entre 8 et 25 activités : ta sélection, les plus adaptées, dont au moins 2 gratuites si possible. Ne recopie pas toute la liste : l'appli affichera elle-même les autres activités du guide après ta sélection.
+- Les prix sont le TOTAL pour tout le groupe. Corrige les prix anciens du guide si tu connais le prix actuel.
+- Si la monnaie du pays est différente de la devise du voyage, donne le prix dans la MONNAIE DU PAYS ("prix_local_total" et "devise_locale", code ISO comme TRY, JPY, MAD) : c'est le vrai prix sur place, l'appli le convertit elle-même au taux du jour. Mets alors aussi "prix_total" dans la devise du voyage, à titre indicatif.
+- Dans "prix_detail", écris les prix dans la monnaie du pays, comme sur place (par exemple 750 TL adulte).
 - Écris en français, avec un ton simple et chaleureux.
 
 Réponds UNIQUEMENT avec un objet JSON valide de cette forme :
@@ -52,7 +56,9 @@ Réponds UNIQUEMENT avec un objet JSON valide de cette forme :
       "pourquoi": "pourquoi c'est adapté à ce profil, en une phrase",
       "quand": "jours et horaires habituels, ou dates de l'événement",
       "duree": "durée conseillée, par exemple 2 h",
-      "prix_total": nombre (0 si gratuit),
+      "prix_total": nombre (0 si gratuit), dans la devise du voyage,
+      "prix_local_total": nombre dans la monnaie du pays, ou null si c'est la même que celle du voyage,
+      "devise_locale": "code ISO de la monnaie du pays (TRY, JPY…)" ou null,
       "prix_detail": "détail du prix, par exemple 25 € adulte, 12 € enfant",
       "reservation": "obligatoire" | "conseillee" | "sur_place",
       "conseil_reservation": "quand et comment réserver",
@@ -73,7 +79,7 @@ Réponds UNIQUEMENT avec un objet JSON valide de cette forme :
 }
 Si aucune ville de départ n'est donnée, mets "transport": null.`;
 
-function demandeTexte(v, candidates) {
+function demandeTexte(v, candidates, change) {
   const nuits = Math.round((new Date(v.fin) - new Date(v.debut)) / 86400000);
   const lignes = [
     `Destination : ${v.destination}`,
@@ -83,7 +89,7 @@ function demandeTexte(v, candidates) {
     v.typeBudget === "total"
       ? `Budget : ${v.budget} ${v.devise} pour TOUT le voyage (transport, logement et activités)`
       : `Budget : ${v.budget} ${v.devise} pour les activités uniquement`,
-    `Devise : ${v.devise}`,
+    `Devise du voyage : ${v.devise}` + (change?.locale && change.locale !== v.devise ? ` · Monnaie du pays : ${change.locale}` : ""),
     v.interets.length ? `Centres d'intérêt : ${v.interets.join(", ")}` : "Centres d'intérêt : non précisés",
     v.depart ? `Ville de départ : ${v.depart}` : "Pas de ville de départ indiquée.",
     `Date d'aujourd'hui : ${new Date().toISOString().slice(0, 10)}`,
@@ -120,11 +126,13 @@ async function appeler(modele, cle, corps, signal) {
 }
 
 // Renvoie le résultat au format affiché par l'appli
-export async function completerAvecGemini(voyage, wv, cle, suivi, signal) {
-  const candidates = (wv?.candidates || []).slice(0, 35);
+export async function completerAvecGemini(voyage, wv, cle, suivi, signal, change = null) {
+  // Toutes les fiches qui conviennent ; Gemini reçoit les 60 meilleures pour faire sa sélection
+  const { fiches: toutes, interetsSansResultat } = wv ? selectionner(voyage, wv) : { fiches: [], interetsSansResultat: false };
+  const candidates = toutes.slice(0, 60);
   const corps = {
     systemInstruction: { parts: [{ text: CONSIGNES }] },
-    contents: [{ role: "user", parts: [{ text: demandeTexte(voyage, candidates) }] }],
+    contents: [{ role: "user", parts: [{ text: demandeTexte(voyage, candidates, change) }] }],
     generationConfig: { responseMimeType: "application/json", maxOutputTokens: 16000 },
   };
 
@@ -153,17 +161,33 @@ export async function completerAvecGemini(voyage, wv, cle, suivi, signal) {
     throw new Error("La réponse de Gemini était mal formée.");
   }
 
-  // Reprend le lien du guide et la source pour les activités Wikivoyage
-  const parId = new Map(candidates.map((f) => [f.id, f]));
-  for (const a of resultat.activites || []) {
+  // Reprend le lien, la position et la source du guide pour les activités Wikivoyage
+  const parId = new Map(toutes.map((f) => [f.id, f]));
+  const dejaChoisies = new Set();
+  resultat.activites = Array.isArray(resultat.activites) ? resultat.activites : [];
+  for (const a of resultat.activites) {
+    a.recommande = true;
+    // Prix en monnaie locale : on le convertit au taux du jour (celui de Gemini peut être ancien)
+    if (typeof a.prix_local_total === "number" && /^[A-Z]{3}$/.test(a.devise_locale || "") && a.devise_locale !== voyage.devise) {
+      const converti = change?.convertir(a.prix_local_total, a.devise_locale);
+      if (converti != null) a.prix_total = Math.round(converti);
+    } else {
+      a.prix_local_total = null;
+      a.devise_locale = null;
+    }
     const f = parId.get(a.id);
     if (f) {
+      dejaChoisies.add(f.id);
       if (!a.lien && f.url) a.lien = f.url;
+      a.lat = f.lat; a.lon = f.lon;
       a.source = `Wikivoyage${f.langue === "en" ? " (anglais)" : ""} + Gemini`;
     } else {
       a.source = "Proposé par Gemini : à vérifier";
     }
   }
-  resultat.note_prix = "Prix et horaires estimés par Gemini (sans recherche web en direct) à partir du guide Wikivoyage : vérifie-les sur le site officiel.";
+  // Puis TOUTES les autres activités du guide qui correspondent au voyage, sans limite
+  for (const f of toutes) if (!dejaChoisies.has(f.id)) resultat.activites.push(versActivite(f, voyage));
+  if (interetsSansResultat) resultat.avertissement = "Le guide n'a pas de fiche pour les centres d'intérêt cochés : voici toutes les activités de la destination.";
+  resultat.note_prix = "Les activités ⭐ sont la sélection de Gemini (prix et horaires estimés sans recherche web en direct). Les suivantes viennent du guide Wikivoyage. Vérifie toujours sur le site officiel.";
   return resultat;
 }

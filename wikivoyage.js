@@ -9,6 +9,8 @@
 // Contenu Wikivoyage : licence CC BY-SA (la source est citée dans l'appli).
 // =====================================================================
 
+import { lirePrix } from "./devises.js";
+
 // ---------- 1. Interroger Wikivoyage ----------------------------------
 
 async function api(langue, params) {
@@ -134,9 +136,29 @@ function lireFiches(texte, langue) {
       notable: Boolean(p.wikidata || p["wikipédia"] || p.wikipedia),
       wikidata: /^Q\d+$/.test((p.wikidata || "").trim()) ? p.wikidata.trim() : null,
       maj: (p["mise à jour"] || p.lastedit || "").slice(0, 4),
+      ...coordonnees(p.latitude ?? p.lat, p.longitude ?? p.long),
     });
   }
   return fiches;
+}
+
+// Position d'une fiche (pour la carte) : { lat, lon } ou rien si absente ou invalide
+function coordonnees(lat, lon) {
+  const la = parseFloat(String(lat ?? "").replace(",", ".")), lo = parseFloat(String(lon ?? "").replace(",", "."));
+  if (!isFinite(la) || !isFinite(lo) || Math.abs(la) > 90 || Math.abs(lo) > 180 || (la === 0 && lo === 0)) return { lat: null, lon: null };
+  return { lat: la, lon: lo };
+}
+
+// Écarte les positions aberrantes (erreur de saisie dans le guide) : à plus de 60 km du centre des autres
+function nettoyerPositions(fiches) {
+  const avec = fiches.filter((f) => f.lat != null);
+  if (avec.length < 3) return;
+  const mediane = (t) => { const s = [...t].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
+  const centre = { lat: mediane(avec.map((f) => f.lat)), lon: mediane(avec.map((f) => f.lon)) };
+  for (const f of avec) {
+    const dLat = (f.lat - centre.lat) * 111, dLon = (f.lon - centre.lon) * 111 * Math.cos((centre.lat * Math.PI) / 180);
+    if (Math.hypot(dLat, dLon) > 60) { f.lat = null; f.lon = null; }
+  }
 }
 
 // Le premier paragraphe de la page sert de résumé
@@ -170,14 +192,13 @@ function categorie(f) {
   return f.type === "voir" ? "Culture" : "Sport et aventure";
 }
 
-// Prix par personne lu dans le texte ; null si inconnu
-function prixParPersonne(texte) {
-  const t = texte.toLowerCase();
-  // D'abord un nombre collé à une devise ("33 €", "€15", "12 euros"), sinon le premier nombre
-  const avecDevise = t.match(/(\d+(?:[.,]\d+)?)\s*(?:€|euros?|eur\b|\$|£|chf|usd|gbp)/) || t.match(/(?:€|\$|£)\s*(\d+(?:[.,]\d+)?)/);
-  const nombre = avecDevise || t.match(/(\d+(?:[.,]\d+)?)/);
-  if (!nombre) return /gratuit|libre|free|gratis/.test(t) ? 0 : null;
-  return parseFloat(nombre[1].replace(",", "."));
+// Prix par personne lu dans le texte, dans sa devise (« 500 TL ») puis converti dans celle du voyage.
+// prixLocal : le vrai prix sur place ; prixPersonne : sa conversion (null si prix ou taux inconnu)
+function lirePrixFiche(f, voyage, change) {
+  const { montant, devise } = lirePrix(f.prix, change?.locale || null);
+  f.prixLocal = montant;
+  f.devisePrix = devise || voyage.devise;
+  f.prixPersonne = change ? change.convertir(montant, f.devisePrix) : (f.devisePrix === voyage.devise ? montant : null);
 }
 
 function reservation(f, prix) {
@@ -273,7 +294,7 @@ const PUBLICITE = /\bevjf\b|\bevg\b|enterrement de vie|bachelor|stag (do|party)|
 // ---------- 5. Point d'entrée -----------------------------------------
 
 // Renvoie { titre, url, langue, resume, candidates: [fiches classées] }
-export async function chercherWikivoyage(voyage, suivi = () => {}) {
+export async function chercherWikivoyage(voyage, suivi = () => {}, change = null) {
   suivi("Recherche de la destination dans le guide Wikivoyage…");
   let langue = "fr";
   let titre = await trouverPage("fr", voyage.destination);
@@ -307,6 +328,7 @@ export async function chercherWikivoyage(voyage, suivi = () => {}) {
             // La fiche anglaise est plus récente : son lien a plus de chances d'être à jour
             if (f.url && (!fr.url || f.maj > fr.maj)) fr.url = f.url;
             if (f.maj > fr.maj) fr.maj = f.maj;
+            if (fr.lat == null && f.lat != null) { fr.lat = f.lat; fr.lon = f.lon; }
           } else {
             fiches.push(f);
             parCle.set(cleFiche(f), f);
@@ -328,12 +350,13 @@ export async function chercherWikivoyage(voyage, suivi = () => {}) {
     if (vus.has(cle) || !typeAutorise(f, voyage) || PUBLICITE.test((f.nom + " " + f.description).toLowerCase())) continue;
     vus.add(cle);
     f.categorie = categorie(f);
-    f.prixPersonne = prixParPersonne(f.prix);
+    lirePrixFiche(f, voyage, change);
     f.score = score(f, voyage);
     candidates.push(f);
   }
   candidates.sort((a, b) => b.score - a.score);
   candidates.forEach((f, i) => (f.id = i + 1));
+  nettoyerPositions(candidates);
 
   return {
     titre, langue, resume, candidates,
@@ -341,26 +364,46 @@ export async function chercherWikivoyage(voyage, suivi = () => {}) {
   };
 }
 
+export function budgetActivites(voyage) {
+  return voyage.typeBudget === "total" ? Math.round(voyage.budget * 0.25) : voyage.budget;
+}
+
+// TOUTES les fiches qui conviennent, sans limite de nombre :
+// - qui correspondent à au moins un centre d'intérêt coché (toutes si aucun n'est coché) ;
+// - pas hors saison ni déconseillées pour le profil ;
+// - dont le prix seul ne dépasse pas tout le budget activités.
+// Renvoie { fiches, interetsSansResultat } (classées de la plus adaptée à la moins adaptée)
+export function selectionner(voyage, wv) {
+  const budget = budgetActivites(voyage);
+  const cats = voyage.interets.map((i) => INTERET_VERS_CATEGORIE[i]).filter(Boolean);
+  const correspond = (f) =>
+    cats.includes(f.categorie) ||
+    (voyage.interets.includes("Insolite") && /insolite|étrange|secret|unusual|quirky|hidden/.test((f.nom + " " + f.description).toLowerCase()));
+
+  let fiches = wv.candidates.filter((f) => f.score >= 0);
+  let interetsSansResultat = false;
+  if (voyage.interets.length) {
+    const filtrees = fiches.filter(correspond);
+    if (filtrees.length) fiches = filtrees;
+    else interetsSansResultat = true; // rien pour ces centres d'intérêt : on montre tout plutôt qu'une page vide
+  }
+  fiches = fiches.filter((f) => {
+    const prix = prixGroupe(f.prixPersonne, voyage);
+    return prix == null || prix <= budget;
+  });
+  return { fiches, interetsSansResultat };
+}
+
 // Construit le résultat final sans IA, au même format que celui de Gemini
 export function resultatSansIA(voyage, wv) {
-  const budgetActivites = voyage.typeBudget === "total" ? Math.round(voyage.budget * 0.25) : voyage.budget;
-  const choisies = [];
-  const parCategorie = {};
-  let total = 0;
-  for (const f of wv.candidates) {
-    if (choisies.length >= 14) break;
-    if (f.score < 0 || (parCategorie[f.categorie] || 0) >= 4) continue;
-    const prix = prixGroupe(f.prixPersonne, voyage);
-    if (prix != null && total + prix > budgetActivites) continue;
-    total += prix || 0;
-    parCategorie[f.categorie] = (parCategorie[f.categorie] || 0) + 1;
-    choisies.push(versActivite(f, voyage));
-  }
+  const { fiches, interetsSansResultat } = selectionner(voyage, wv);
+  const choisies = fiches.map((f) => versActivite(f, voyage));
   return {
+    avertissement: interetsSansResultat ? "Le guide n'a pas de fiche pour les centres d'intérêt cochés : voici toutes les activités de la destination." : null,
     destination: wv.titre,
     resume: wv.resume,
     meteo: null,
-    budget_activites: budgetActivites,
+    budget_activites: budgetActivites(voyage),
     explication_budget: voyage.typeBudget === "total"
       ? "Sans IA, l'appli réserve 25 % du budget total aux activités (le reste pour le transport et le logement)."
       : null,
@@ -368,7 +411,7 @@ export function resultatSansIA(voyage, wv) {
     conseils: [],
     transport: null,
     logement: null,
-    note_prix: "Prix lus dans le guide Wikivoyage, parfois anciens ; enfants comptés à moitié prix. Prix inconnu : non compté dans le total.",
+    note_prix: "Prix lus dans le guide Wikivoyage, parfois anciens ; enfants comptés à moitié prix. Coche les activités que tu choisis pour suivre ton budget.",
   };
 }
 
@@ -384,11 +427,16 @@ export function versActivite(f, voyage) {
     quand: f.horaire || null,
     duree: null,
     prix_total: prix,
+    // Prix dans la monnaie du pays (le vrai prix sur place), quand elle diffère de celle du voyage
+    prix_local_total: f.devisePrix && f.devisePrix !== voyage.devise && f.prixLocal != null ? prixGroupe(f.prixLocal, voyage) : null,
+    devise_locale: f.devisePrix && f.devisePrix !== voyage.devise ? f.devisePrix : null,
     prix_detail: f.prix ? f.prix + (f.prixAnglais ? " (guide anglais)" : "") : "Prix non indiqué dans le guide",
     reservation: resa,
     conseil_reservation: conseil,
     lien: f.url || null,
     evenement_ponctuel: false,
+    lat: f.lat ?? null,
+    lon: f.lon ?? null,
     source: f.maj ? `Wikivoyage${f.langue === "en" ? " (anglais)" : ""}, fiche mise à jour en ${f.maj}` : `Wikivoyage${f.langue === "en" ? " (anglais)" : ""}`,
   };
 }

@@ -36,11 +36,13 @@ export const RESULTAT_DEMO = {
       quand: "Tous les jours, 9 h – 18 h",
       duree: "1 h 30",
       prix_total: 78,
-      prix_detail: "26 € adulte, 13 € enfant (gratuit moins de 11 ans selon la formule)",
+      prix_detail: "26 € adulte, 13 € enfant",
       reservation: "obligatoire",
       conseil_reservation: "Réserver 2 à 3 semaines avant : les créneaux du matin partent en premier.",
       lien: "https://sagradafamilia.org/fr/",
       evenement_ponctuel: false,
+      lat: 41.4036,
+      lon: 2.1744,
     },
     {
       nom: "Fira de Santa Llúcia",
@@ -55,6 +57,8 @@ export const RESULTAT_DEMO = {
       conseil_reservation: "Pas de réservation. Plus calme en semaine avant 17 h.",
       lien: "https://www.firadesantallucia.cat/",
       evenement_ponctuel: true,
+      lat: 41.3839,
+      lon: 2.1762,
     },
     {
       nom: "Park Güell",
@@ -69,6 +73,8 @@ export const RESULTAT_DEMO = {
       conseil_reservation: "Réserver quelques jours avant pour choisir son horaire.",
       lien: "https://parkguell.barcelona/fr",
       evenement_ponctuel: false,
+      lat: 41.4145,
+      lon: 2.1527,
     },
     {
       nom: "Plage de la Barceloneta",
@@ -83,6 +89,8 @@ export const RESULTAT_DEMO = {
       conseil_reservation: "Aucune réservation.",
       lien: null,
       evenement_ponctuel: false,
+      lat: 41.3784,
+      lon: 2.1925,
     },
   ],
   conseils: [

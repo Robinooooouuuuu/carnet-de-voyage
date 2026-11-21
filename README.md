@@ -6,6 +6,17 @@ avec le lien vers le site officiel et une indication sur la réservation. Elle p
 transport et le logement, avec des liens pré-remplis vers Skyscanner, Google Flights, Trainline,
 Rome2Rio, Booking.com et Airbnb.
 
+## Utiliser l'appli
+
+**En ligne :** https://robinooooouuuuu.github.io/carnet-de-voyage/
+
+**Sur un téléphone**, ouvre cette adresse puis :
+- **iPhone / iPad (Safari)** : bouton Partager → « Sur l'écran d'accueil ».
+- **Android (Chrome)** : menu ⋮ → « Ajouter à l'écran d'accueil » (ou « Installer l'application »).
+
+L'appli s'ouvre alors en plein écran, comme une vraie appli. Chaque personne garde ses voyages
+sur son propre appareil : rien n'est partagé ni envoyé sur un serveur.
+
 ## Comment ça marche
 
 1. **Le guide Wikivoyage** (gratuit, sans compte ni clé). L'appli lit les fiches « Voir » et
@@ -29,6 +40,15 @@ Rome2Rio, Booking.com et Airbnb.
   lui échapper.
 - Google peut utiliser les demandes gratuites à Gemini pour améliorer ses produits. L'appli ne
   lui envoie que le projet de voyage (destination, dates, budget, profil).
+
+## Mes voyages
+
+L'accueil liste les voyages planifiés (à venir d'abord) et propose d'en planifier un nouveau.
+Chaque voyage (critères, activités proposées, coches, montants réels) reste enregistré dans le
+navigateur de l'appareil, sans limite de durée, jusqu'à ce qu'on le supprime. Pour le retrouver sur
+un autre appareil ou par sécurité : « Sauvegarder ou restaurer mes voyages » (fichier `.json`,
+sans la clé Gemini). Sur iPhone, ajouter l'appli à l'écran d'accueil évite que Safari efface les
+données d'un site resté plusieurs semaines sans être ouvert.
 
 ## Pourquoi des liens et pas un « scan » des sites de réservation ?
 
@@ -59,6 +79,9 @@ chaque jour vers 9 h (heure de Paris).
 | `app.js` | Le formulaire, l'enchaînement Wikivoyage puis Gemini, l'affichage des résultats |
 | `wikivoyage.js` | Lecture des fiches Wikivoyage, catégories, prix, réservation, choix des activités |
 | `gemini.js` | Le complément facultatif par Gemini (consignes, appel, lecture de la réponse) |
+| `carte.js` | L'onglet « Carte » : les activités sur une carte OpenStreetMap, colorées par jour prévu |
+| `voyages.js` | Le carnet : voyages enregistrés dans le navigateur, suppression, sauvegarde et restauration dans un fichier |
+| `devises.js` | Monnaie du pays, taux de change du jour, lecture de la devise dans chaque prix |
 | `liens.js` | Les liens pré-remplis vers les sites de transport et de logement |
 | `aeroports.js` | Trouve l'aéroport principal près de la ville de départ et de la destination (pour Skyscanner) |
 | `aeroports-donnees.js` | Liste des aéroports du monde (code, position, trafic), tirée de Wikidata |
@@ -76,5 +99,7 @@ Double-clic sur `lancer-serveur.bat`, puis ouvrir http://localhost:8000/
 - Activités : [Wikivoyage](https://fr.wikivoyage.org/) (français et anglais), contenu sous licence
   [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.fr). La page source est citée
   sous les résultats.
+- Carte : © contributeurs [OpenStreetMap](https://www.openstreetmap.org/copyright), bibliothèque [Leaflet](https://leafletjs.com/).
 - Aéroports et position des villes : [Wikidata](https://www.wikidata.org/) (licence CC0).
+- Taux de change : [Frankfurter](https://frankfurter.dev/) (taux de la Banque centrale européenne), complété par [ExchangeRate-API](https://www.exchangerate-api.com) ; monnaie des pays : Wikidata.
 - IA facultative : [Gemini API](https://aistudio.google.com/) (Google), version gratuite.

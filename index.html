@@ -56,12 +56,83 @@ input,select{width:100%;border:1px solid var(--line);background:var(--bg);border
 .jauge{height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin:6px 0 4px}
 .jauge span{display:block;height:100%;background:var(--vert)}
 .jauge.depasse span{background:var(--rouge)}
+.jauge.limite span{background:var(--ambre)}
+.jauge span{transition:width .3s ease}
+/* --- Suivi des activités prévues --- */
+.suivi-budget{position:sticky;top:env(safe-area-inset-top,0px);z-index:2;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.08)}
+.suivi-budget.statique{position:static}
+.suivi-ligne{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.suivi-ligne .depense{font-size:20px}
+.programme{margin-top:8px;font-size:14px}
+.programme summary{cursor:pointer;color:var(--acc);font-weight:700}
+.suivi{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+label.coche{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:15px;font-weight:700;cursor:pointer}
+label.coche input{width:20px;height:20px;margin:0;accent-color:var(--vert);cursor:pointer}
+.suivi-details{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.suivi-details select{width:auto;padding:6px 8px}
+.suivi-details input{width:100px;padding:6px 8px}
+.activite.prevue{border-color:var(--vert);box-shadow:inset 4px 0 0 var(--vert)}
+.activite.surlignee{outline:3px solid var(--acc);outline-offset:2px}
+.b-gardee{background:var(--vert-bg);color:var(--vert);font-weight:700}
+.b-reco{background:var(--ambre-bg);color:var(--ambre);font-weight:700}
+/* --- Accueil : mes voyages --- */
+h1 a{color:inherit;text-decoration:none}
+.principal.nouveau{width:100%;margin:4px 0 6px}
+.liste-voyages{display:grid;gap:10px}
+.voyage-carte{display:flex;gap:12px;align-items:center}
+.voyage-carte:hover{border-color:var(--acc)}
+.voyage-carte.passe{opacity:.7}
+a.ouvrir{flex:1;min-width:0;color:inherit;text-decoration:none}
+a.ouvrir p{margin:2px 0}
+.voyage-haut{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.badge.quand{background:var(--bleu-bg);color:var(--bleu)}
+.badge.quand.bientot,.badge.quand.encours{background:var(--vert-bg);color:var(--vert)}
+.badge.quand.passe{background:var(--line);color:var(--mut)}
+.supprimer{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--mut);white-space:nowrap}
+.supprimer:hover{color:var(--rouge);border-color:var(--rouge)}
+.sauvegarde{margin-top:24px}
+.sauvegarde summary{cursor:pointer;font-weight:700}
+.boutons-sauvegarde{display:flex;flex-wrap:wrap;gap:8px}
+label.importer{display:inline-block;margin:0;font-weight:400;font-size:16px}
+/* --- En-tête d'un voyage --- */
+.entete-voyage{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;margin:0 0 14px}
+.entete-voyage .titre{flex:1;min-width:180px}
+.entete-voyage h2{margin:0}
+.entete-voyage .meta{margin:2px 0 0}
+.retour{color:var(--acc);font-weight:700;text-decoration:none;white-space:nowrap}
+.retour:hover{text-decoration:underline}
+@media (max-width:560px){.voyage-carte{flex-direction:column;align-items:stretch}.supprimer{align-self:flex-start}}
+/* --- Onglets des résultats --- */
+.onglets{display:flex;gap:4px;margin:22px 0 14px;border-bottom:2px solid var(--line)}
+.onglet{flex:1;border:0;background:none;padding:10px 12px;font-weight:700;font-size:16px;color:var(--mut);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;border-radius:8px 8px 0 0}
+.onglet[aria-selected=true]{color:var(--acc);border-bottom-color:var(--acc);background:var(--card)}
+.onglet:hover{color:var(--ink)}
+.panneau-transport{display:grid;gap:12px}
+.champs-reel{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0}
+.champs-reel .devise{flex:0 0 auto;align-self:center;color:var(--mut)}
+.resultat-reel{font-weight:700;margin:4px 0 0}
+@media (max-width:560px){.champs-reel{grid-template-columns:1fr}.onglet{font-size:14px;padding:10px 6px}}
+/* --- Onglet Carte --- */
+.zone-carte{padding:10px}
+.plan{height:min(65vh,520px);border-radius:10px;position:relative;isolation:isolate;z-index:0}
+.choix-carte{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.legende{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 2px 4px;font-size:13px}
+.legende span{display:inline-flex;align-items:center;gap:6px}
+.legende i{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.bulle{font:14px/1.4 "DM Sans",system-ui,sans-serif;min-width:160px}
+.bulle b{display:block;font-size:15px;margin-bottom:2px}
+.bulle button{margin-top:8px;border:0;border-radius:6px;background:#b4532a;color:#fff;padding:5px 10px;cursor:pointer;font:inherit}
+.leaflet-container{font:inherit}
+@media (prefers-reduced-motion:reduce){.jauge span{transition:none}}
 .filtres{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .activite{margin-bottom:12px}
 .activite .haut{display:flex;gap:12px;align-items:flex-start}
 .activite .haut div{flex:1;min-width:0}
-.prix{font-weight:700;font-size:18px;white-space:nowrap;text-align:right}
-.prix small{display:block;font-weight:400;font-size:12px;color:var(--mut)}
+.prix{font-weight:700;font-size:18px;white-space:nowrap;text-align:right;max-width:45%}
+.prix .converti{font-weight:700;color:var(--ink);opacity:.75}
+.info.devise{margin:10px 0 0}
+.prix small{display:block;font-weight:400;font-size:12px;color:var(--mut);white-space:normal;overflow-wrap:anywhere}
+.alerte-budget{color:var(--rouge);font-weight:700;margin:6px 0 0}
 .badges{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .badge{font-size:13px;padding:2px 9px;border-radius:99px;font-weight:500}
 .b-obligatoire{background:var(--rouge-bg);color:var(--rouge)}
@@ -98,13 +169,42 @@ footer{margin-top:36px;font-size:13px;color:var(--mut)}
 <main>
   <header>
     <div>
-      <h1>Carnet de voyage</h1>
-      <p class="sub">Dis-moi où et quand tu pars : je te propose des activités dans ton budget, puis le transport et le logement. 100 % gratuit.</p>
+      <h1><a href="./" class="lien-accueil">Carnet de voyage</a></h1>
+      <p class="sub">Parce que « on verra sur place » n'a jamais été un plan.</p>
     </div>
     <button type="button" class="bouton-cle" id="ouvrir-cle">✨ Ajouter Gemini</button>
   </header>
 
   <div id="bandeau-demo" class="info" hidden>Mode démo : les résultats ci-dessous sont un exemple écrit à la main, sans recherche réelle. <a href="./">Quitter la démo</a></div>
+
+  <!-- Page d'accueil : nouveau voyage + voyages déjà planifiés -->
+  <section id="accueil" hidden>
+    <button type="button" class="principal nouveau" id="nouveau-voyage">➕ Planifier un nouveau voyage</button>
+    <h2 id="titre-mes-voyages">Mes voyages</h2>
+    <div id="liste-voyages" class="liste-voyages"></div>
+    <p id="aucun-voyage" class="meta" hidden>Aucun voyage pour l'instant. Tes voyages planifiés apparaîtront ici, et resteront enregistrés sur cet appareil jusqu'à ce que tu les supprimes.</p>
+    <details class="carte sauvegarde">
+      <summary>💾 Sauvegarder ou restaurer mes voyages</summary>
+      <p class="meta">Tes voyages sont enregistrés dans ce navigateur, sur cet appareil. Pour les garder en sécurité ou les retrouver sur un autre appareil, sauvegarde-les dans un fichier, puis restaure ce fichier là où tu veux. La clé Gemini n'est jamais incluse.</p>
+      <p class="meta">Sur iPhone et iPad, ajoute l'appli à l'écran d'accueil (Partager → « Sur l'écran d'accueil ») : Safari peut effacer les données des sites qu'on n'a pas ouverts depuis quelques semaines.</p>
+      <div class="boutons-sauvegarde">
+        <button type="button" class="bouton-cle" id="exporter">⬇️ Sauvegarder dans un fichier</button>
+        <label class="bouton-cle importer">⬆️ Restaurer depuis un fichier<input type="file" id="importer" accept=".json,application/json" hidden></label>
+      </div>
+      <p id="message-sauvegarde" class="meta" role="status"></p>
+    </details>
+  </section>
+
+  <!-- Un voyage : critères, recherche et résultats -->
+  <section id="vue-voyage" hidden>
+    <div class="entete-voyage">
+      <a href="#" class="retour">← Mes voyages</a>
+      <div class="titre">
+        <h2 id="titre-voyage">Nouveau voyage</h2>
+        <p id="dates-voyage" class="meta"></p>
+      </div>
+      <button type="button" class="bouton-cle" id="modifier-criteres" aria-expanded="false" aria-controls="formulaire">✏️ Modifier les critères</button>
+    </div>
 
   <form class="carte" id="formulaire" novalidate>
     <div class="plein">
@@ -181,6 +281,7 @@ footer{margin-top:36px;font-size:13px;color:var(--mut)}
 
   <div id="erreur" class="alerte" role="alert" hidden></div>
   <section id="resultats" hidden></section>
+  </section>
 
   <footer>
     Activités tirées du guide libre <a href="https://fr.wikivoyage.org/" target="_blank" rel="noopener">Wikivoyage</a> (licence CC BY-SA), complétées si tu le souhaites par l'IA gratuite Gemini (Google).
