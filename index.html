@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carnet de voyage – activités, transport et logement</title>
+<link rel="icon" type="image/png" sizes="32x32" href="icones/favicon-32.png">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-title" content="Carnet de voyage">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#b4532a">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f1e8;--card:#fffdf9;--ink:#2b211b;--mut:#76665b;--line:#e4d8c8;--acc:#b4532a;--acc-ink:#fff;--rouge:#b3261e;--rouge-bg:#fbe5e2;--ambre:#8a5a00;--ambre-bg:#fdf0d2;--vert:#2d6a3e;--vert-bg:#e1f1e4;--bleu:#255a87;--bleu-bg:#e3eef8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1511;--card:#261e19;--ink:#f3ebe2;--mut:#b2a194;--line:#3d3129;--acc:#e07a4c;--acc-ink:#1b1511;--rouge:#ff8a80;--rouge-bg:#3d1f1c;--ambre:#f2c35b;--ambre-bg:#3a2e13;--vert:#86d39a;--vert-bg:#1d3324;--bleu:#8cc0ec;--bleu-bg:#1b2c3c}}
+:root[data-theme="dark"]{--bg:#1b1511;--card:#261e19;--ink:#f3ebe2;--mut:#b2a194;--line:#3d3129;--acc:#e07a4c;--acc-ink:#1b1511;--rouge:#ff8a80;--rouge-bg:#3d1f1c;--ambre:#f2c35b;--ambre-bg:#3a2e13;--vert:#86d39a;--vert-bg:#1d3324;--bleu:#8cc0ec;--bleu-bg:#1b2c3c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "DM Sans",system-ui,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+main{max-width:820px;margin:0 auto;padding:20px 16px 56px}
+header{display:flex;align-items:flex-start;gap:12px;margin-bottom:18px}
+header div{flex:1}
+h1{font:800 clamp(30px,6vw,44px)/1.05 Fraunces,Georgia,serif;margin:0 0 6px;letter-spacing:-.01em}
+h2{font:600 24px/1.2 Fraunces,Georgia,serif;margin:28px 0 10px}
+h3{font-size:18px;margin:0}
+.sub{color:var(--mut);margin:0}
+button,input,select{font:inherit;color:var(--ink)}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.bouton-cle{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 14px;cursor:pointer;white-space:nowrap}
+.carte{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+form.carte{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{display:block;font-weight:500;font-size:14px;margin-bottom:4px}
+label small{font-weight:400;color:var(--mut)}
+input,select{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px}
+.plein{grid-column:1/-1}
+.ligne{display:flex;gap:8px}
+.ligne>*{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:99px;padding:5px 12px;cursor:pointer;font-size:14px}
+.chip[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.principal{grid-column:1/-1;border:0;border-radius:10px;background:var(--acc);color:var(--acc-ink);font-weight:700;padding:12px;cursor:pointer;font-size:17px}
+.principal:disabled{opacity:.6;cursor:wait}
+.note{font-size:14px;color:var(--mut);margin:8px 0 0}
+.alerte{border-left:4px solid var(--rouge);background:var(--rouge-bg);padding:10px 12px;border-radius:6px;margin:14px 0}
+.info{border-left:4px solid var(--ambre);background:var(--ambre-bg);padding:10px 12px;border-radius:6px;margin:14px 0;font-size:14px}
+#progression{margin:16px 0;display:none}
+#progression.actif{display:block}
+.barre-attente{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-bottom:8px}
+.barre-attente span{display:block;height:100%;width:30%;background:var(--acc);animation:glisse 1.4s ease-in-out infinite}
+@keyframes glisse{0%{margin-left:-30%}100%{margin-left:100%}}
+@media (prefers-reduced-motion:reduce){.barre-attente span{animation:none;width:100%;opacity:.5}}
+#etapes{font-size:14px;color:var(--mut);margin:0;padding-left:18px;max-height:140px;overflow:auto}
+.resume p{margin:6px 0}
+.budget{margin-top:12px}
+.jauge{height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin:6px 0 4px}
+.jauge span{display:block;height:100%;background:var(--vert)}
+.jauge.depasse span{background:var(--rouge)}
+.filtres{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.activite{margin-bottom:12px}
+.activite .haut{display:flex;gap:12px;align-items:flex-start}
+.activite .haut div{flex:1;min-width:0}
+.prix{font-weight:700;font-size:18px;white-space:nowrap;text-align:right}
+.prix small{display:block;font-weight:400;font-size:12px;color:var(--mut)}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.badge{font-size:13px;padding:2px 9px;border-radius:99px;font-weight:500}
+.b-obligatoire{background:var(--rouge-bg);color:var(--rouge)}
+.b-conseillee{background:var(--ambre-bg);color:var(--ambre)}
+.b-sur_place{background:var(--vert-bg);color:var(--vert)}
+.b-evenement{background:var(--bleu-bg);color:var(--bleu)}
+.b-cat{border:1px solid var(--line);color:var(--mut)}
+.activite p{margin:4px 0}
+.meta{color:var(--mut);font-size:14px}
+.conseil-resa{font-size:14px;margin-top:6px}
+a.lien{display:inline-block;margin-top:8px;color:var(--acc);font-weight:700;text-decoration:none}
+a.lien:hover{text-decoration:underline}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.option b{display:block}
+.boutons-sites{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+a.site{display:inline-flex;flex-direction:column;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 14px;text-decoration:none;color:var(--ink)}
+a.site b{color:var(--acc)}
+a.site small{color:var(--mut)}
+a.site:hover{border-color:var(--acc)}
+ul.simple{margin:6px 0;padding-left:20px}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);max-width:520px;width:calc(100% - 32px);padding:20px}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+dialog .actions button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 14px;cursor:pointer}
+dialog .actions .ok{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:700}
+footer{margin-top:36px;font-size:13px;color:var(--mut)}
+[hidden]{display:none!important}
+@media (max-width:560px){form.carte{grid-template-columns:1fr}.activite .haut{flex-direction:column;gap:4px}.prix{text-align:left}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Carnet de voyage</h1>
+      <p class="sub">Dis-moi où et quand tu pars : je te propose des activités dans ton budget, puis le transport et le logement.</p>
+    </div>
+    <button type="button" class="bouton-cle" id="ouvrir-cle">🔑 Clé API</button>
+  </header>
+
+  <div id="bandeau-demo" class="info" hidden>Mode démo : les résultats ci-dessous sont un exemple écrit à la main, sans recherche réelle. <a href="./">Quitter la démo</a></div>
+
+  <form class="carte" id="formulaire" novalidate>
+    <div class="plein">
+      <label for="destination">Destination</label>
+      <input id="destination" required placeholder="Ex. Barcelone, Lisbonne, Japon…" autocomplete="off">
+    </div>
+    <div>
+      <label for="debut">Date d'arrivée</label>
+      <input id="debut" type="date" required>
+    </div>
+    <div>
+      <label for="fin">Date de retour</label>
+      <input id="fin" type="date" required>
+    </div>
+    <div>
+      <label for="budget">Budget</label>
+      <div class="ligne">
+        <input id="budget" type="number" min="0" step="10" required placeholder="500" inputmode="numeric">
+        <select id="devise" aria-label="Devise" style="flex:0 0 84px">
+          <option>EUR</option><option>USD</option><option>GBP</option><option>CHF</option><option>CAD</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label for="type-budget">Ce budget couvre</label>
+      <select id="type-budget">
+        <option value="activites">Les activités uniquement</option>
+        <option value="total">Tout le voyage (transport + logement + activités)</option>
+      </select>
+    </div>
+    <div>
+      <label for="profil">Profil voyageur</label>
+      <select id="profil">
+        <option value="solo">Solo</option>
+        <option value="couple" selected>En couple</option>
+        <option value="amis">Entre amis</option>
+        <option value="famille-petits">Famille avec jeunes enfants</option>
+        <option value="famille-ados">Famille avec adolescents</option>
+        <option value="seniors">Seniors</option>
+      </select>
+    </div>
+    <div class="ligne">
+      <div>
+        <label for="adultes">Adultes</label>
+        <input id="adultes" type="number" min="1" max="16" value="2" inputmode="numeric">
+      </div>
+      <div>
+        <label for="enfants">Enfants</label>
+        <input id="enfants" type="number" min="0" max="10" value="0" inputmode="numeric">
+      </div>
+    </div>
+    <div class="plein" id="bloc-ages" hidden>
+      <label for="ages">Âge des enfants <small>(séparés par des virgules, ex. 6, 9)</small></label>
+      <input id="ages" placeholder="6, 9" inputmode="numeric">
+    </div>
+    <div class="plein">
+      <label id="label-interets">Centres d'intérêt <small>(facultatif)</small></label>
+      <div class="chips" id="interets" role="group" aria-labelledby="label-interets"></div>
+    </div>
+    <div class="plein">
+      <label for="depart">Ville de départ <small>(facultatif : pour te proposer le transport)</small></label>
+      <input id="depart" placeholder="Ex. Paris, Lyon, Bruxelles…" autocomplete="off">
+    </div>
+    <p id="erreur-formulaire" class="alerte plein" role="alert" hidden></p>
+    <button class="principal" id="lancer" type="submit">Trouver mes activités</button>
+  </form>
+
+  <div id="progression" class="carte" aria-live="polite">
+    <div class="barre-attente"><span></span></div>
+    <b>Claude prépare ton voyage…</b> <small class="meta">(1 à 3 minutes : il vérifie les dates, les prix et les sites officiels)</small>
+    <ul id="etapes"></ul>
+    <button type="button" class="bouton-cle" id="annuler" style="margin-top:8px">Annuler</button>
+  </div>
+
+  <div id="erreur" class="alerte" role="alert" hidden></div>
+  <section id="resultats" hidden></section>
+
+  <footer>
+    Les activités sont proposées par Claude (Anthropic) après une recherche sur le web : vérifie toujours les horaires et les prix sur le site officiel avant de partir.
+    Les prix de transport et de logement sont des estimations ; les prix réels s'affichent sur les sites en cliquant sur les liens.
+    <br><a href="?demo">Voir un exemple (mode démo)</a>
+  </footer>
+</main>
+
+<dialog id="dialogue-cle" aria-labelledby="titre-cle">
+  <form method="dialog" id="form-cle">
+    <h2 id="titre-cle" style="margin-top:0">Ta clé API Claude</h2>
+    <p>Pour chercher les activités, l'appli utilise Claude avec ta propre clé API Anthropic.</p>
+    <ul class="simple">
+      <li>Crée une clé sur <a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener">platform.claude.com</a> (menu « API keys »), après avoir ajouté un peu de crédit.</li>
+      <li>Chaque recherche coûte environ 10 à 40 centimes ; le coût exact s'affiche après chaque recherche.</li>
+      <li>La clé reste <b>uniquement dans ce navigateur</b>, sur cet appareil. Elle n'est envoyée qu'à Anthropic (api.anthropic.com), jamais sur GitHub.</li>
+      <li>Conseil : fixe une limite de dépenses mensuelle dans les réglages de ton compte Anthropic.</li>
+    </ul>
+    <label for="cle">Clé API</label>
+    <input id="cle" type="password" autocomplete="off" placeholder="sk-ant-…" spellcheck="false">
+    <div class="actions">
+      <button type="button" id="effacer-cle">Effacer la clé</button>
+      <button value="annuler" formnovalidate>Fermer</button>
+      <button value="ok" class="ok">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

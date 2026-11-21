@@ -1,0 +1,8 @@
+# Fichiers que Git ne doit PAS enregistrer ni envoyer sur GitHub
+
+# Réglages locaux de Claude (lancement du serveur de test)
+.claude/
+
+# Fichiers parasites de Windows
+Thumbs.db
+desktop.ini
