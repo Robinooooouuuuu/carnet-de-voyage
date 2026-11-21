@@ -172,6 +172,8 @@ async function lancerRecherche(evt) {
   try {
     // 1. Les activités du guide Wikivoyage (gratuit, sans clé)
     const { chercherWikivoyage, resultatSansIA } = await import("./wikivoyage.js");
+    // En parallèle : les aéroports de départ et d'arrivée, pour le lien Skyscanner
+    const vols = voyage.depart ? import("./aeroports.js").then((m) => m.codesVols(voyage.depart, voyage.destination)).catch(() => null) : null;
     let wv = null;
     try {
       wv = await chercherWikivoyage(voyage, suivi);
@@ -199,6 +201,7 @@ async function lancerRecherche(evt) {
       resultat = resultatSansIA(voyage, wv);
     }
     if (wv) resultat.source_page = { titre: wv.titre, url: wv.url };
+    resultat.vols = await vols;
     if (wv && wv.candidates.length === 0 && !cle) {
       throw new Error("Le guide Wikivoyage n'a pas de fiches d'activités pour cette destination. Ajoute une clé Gemini gratuite pour avoir des propositions.");
     }
@@ -314,7 +317,8 @@ function sectionTransportLogement(voyage, r) {
           o.commentaire && el("p", { class: "meta", style: "margin:2px 0 0" }, o.commentaire),
         ))),
       el("p", { class: "note" }, (options.length ? "Prix estimés par Gemini. " : "") + "Les prix réels, à tes dates, s'affichent sur ces sites :"),
-      boutonsSites(liensTransport(voyage, { skyscannerDepart: t.code_skyscanner_depart, skyscannerArrivee: t.code_skyscanner_arrivee })),
+      // Codes d'aéroport : ceux trouvés avec Wikidata d'abord, sinon ceux proposés par Gemini
+      boutonsSites(liensTransport(voyage, r.vols || { skyscannerDepart: t.code_skyscanner_depart, skyscannerArrivee: t.code_skyscanner_arrivee })),
     ));
   }
 

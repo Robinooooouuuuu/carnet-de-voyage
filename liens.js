@@ -29,7 +29,7 @@ export function liensTransport(voyage, codes = {}) {
     if (nbEnfants) p.set("childrenv2", voyage.agesEnfants.join("|"));
     liens.push({
       site: "Skyscanner",
-      type: "Vols",
+      type: codes.libelle ? "Vols " + codes.libelle : "Vols",
       url: `https://www.skyscanner.fr/transport/vols/${codes.skyscannerDepart.trim().toLowerCase()}/${codes.skyscannerArrivee.trim().toLowerCase()}/${dateCourte(voyage.debut)}/${dateCourte(voyage.fin)}/?${p}`,
     });
   }

@@ -36,6 +36,9 @@ Skyscanner, Booking.com, Airbnb et Trainline interdisent la lecture automatique 
 (conditions d'utilisation, protections anti-robots). L'appli fabrique donc des liens qui ouvrent
 directement leur page de résultats pour tes dates : les vrais prix, à jour, s'affichent en un clic.
 Trainline n'accepte pas de lien pré-rempli : son lien ouvre sa page de recherche.
+Pour Skyscanner, l'appli choisit l'aéroport le plus fréquenté à moins de 100 km de chaque ville
+(ex. Genève pour Annecy) ; pour Paris, Londres, Milan, Rome, New York, Tokyo et Stockholm, elle
+utilise le code « ville » de Skyscanner, qui regroupe tous leurs aéroports.
 
 ## Ajouter Gemini (facultatif)
 
@@ -57,6 +60,8 @@ chaque jour vers 9 h (heure de Paris).
 | `wikivoyage.js` | Lecture des fiches Wikivoyage, catégories, prix, réservation, choix des activités |
 | `gemini.js` | Le complément facultatif par Gemini (consignes, appel, lecture de la réponse) |
 | `liens.js` | Les liens pré-remplis vers les sites de transport et de logement |
+| `aeroports.js` | Trouve l'aéroport principal près de la ville de départ et de la destination (pour Skyscanner) |
+| `aeroports-donnees.js` | Liste des aéroports du monde (code, position, trafic), tirée de Wikidata |
 | `demo.js` | Un exemple de résultat (`?demo`) |
 | `icones/`, `manifest.json` | Icône de l'appli (écran d'accueil du téléphone, onglet du navigateur) |
 | `serveur.ps1`, `lancer-serveur.bat` | Petit serveur local pour tester l'appli sur son PC |
@@ -71,4 +76,5 @@ Double-clic sur `lancer-serveur.bat`, puis ouvrir http://localhost:8000/
 - Activités : [Wikivoyage](https://fr.wikivoyage.org/) (français et anglais), contenu sous licence
   [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.fr). La page source est citée
   sous les résultats.
+- Aéroports et position des villes : [Wikidata](https://www.wikidata.org/) (licence CC0).
 - IA facultative : [Gemini API](https://aistudio.google.com/) (Google), version gratuite.
