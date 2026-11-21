@@ -29,13 +29,18 @@ button,input,select{font:inherit;color:var(--ink)}
 button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 .bouton-cle{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 14px;cursor:pointer;white-space:nowrap}
 .carte{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
-form.carte{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+form.carte{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+form.carte>*{min-width:0}
 label{display:block;font-weight:500;font-size:14px;margin-bottom:4px}
 label small{font-weight:400;color:var(--mut)}
-input,select{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px}
+input,select{width:100%;max-width:100%;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px}
+/* Champs de date : Safari (iPhone) leur impose une largeur minimale qui dépasse du cadre */
+input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-height:42px;line-height:1.2;font-size:16px}
+input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+input[type=date]::-webkit-datetime-edit{padding:0}
 .plein{grid-column:1/-1}
 .ligne{display:flex;gap:8px}
-.ligne>*{flex:1}
+.ligne>*{flex:1;min-width:0}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--line);background:var(--bg);border-radius:99px;padding:5px 12px;cursor:pointer;font-size:14px}
 .chip[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
@@ -162,7 +167,7 @@ dialog .actions button{border:1px solid var(--line);background:var(--bg);border-
 dialog .actions .ok{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:700}
 footer{margin-top:36px;font-size:13px;color:var(--mut)}
 [hidden]{display:none!important}
-@media (max-width:560px){form.carte{grid-template-columns:1fr}.activite .haut{flex-direction:column;gap:4px}.prix{text-align:left}}
+@media (max-width:560px){form.carte{grid-template-columns:minmax(0,1fr)}.activite .haut{flex-direction:column;gap:4px}.prix{text-align:left}}
 </style>
 </head>
 <body>
